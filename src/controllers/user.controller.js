@@ -235,7 +235,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
 
-
+    console.log(newPassword);
 
     const user = await User.findById(req.user?._id)
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
@@ -297,13 +297,13 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     //TODO: delete old image - assignment
     const result = await User.findById(user.Id);
     if (!result || result.length === 0) {
-        throw new ApiErrorHandler(404, "user not found");
+        throw new ApiError(404, "user not found");
     }
     const { deleteImageResponse } = await deleteFromCloudinary([
         result.avatarPublicId,
     ]);
     if (!deleteImageResponse) {
-        throw new ApiErrorHandler(
+        throw new ApiError(
             "500",
             "Problem while delteing avatar from cloudinary, please try again"
         );
