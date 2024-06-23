@@ -30,15 +30,84 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "comment",
+                as: "likescount"
 
+            },
+        },
+        {
+            $addFields: {
+                likescount: {
+                    $size: "$likescount"
+                },
+                owner: {
+                    // $arrayElemAt:["$owner",0] this is the optobal method 
+                    $first: "$owner"
+                },
+                isLiked: {
+                    $cond: {
+                        if: {
+                            $in: [req.user?._id, "$likes.likedBy"]
+                        },
+                        then: true,
+                        else: false
+
+                    },
+                },
+
+            },
+        },
+        {
+            $sort: {
+                createdAt: -1,
+            },
+
+        },
+        {
+            $project: {
+                content: 1,
+                createdAt: 1,
+                likescount: 1,
+                owner: {
+                    username: 1,
+                    fullName: 1,
+                    'avatar.url': 1,
+                },
+                isLiked: 1,
             },
         },
 
 
-    ])
+    ]);
 
 
-})
+    if (!getComments) {
+        throw new ApiError(500, "Error while loading getComments section");
+    }
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        //we also can do this but above is better
+        // page: 1,
+        // limit: 10,
+    };
+
+    const comments = await Comment.aggregatePaginate(getComments, options);
+
+    if (!comments) {
+        throw new ApiError(500, "Error while loading comments section");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, comments, "Comments fetched successfully!"));
+});
+
+
+
 
 const addComment = asyncHandler(async (req, res) => {
     // TODO: add a comment to a video
